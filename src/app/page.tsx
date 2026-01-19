@@ -9,6 +9,7 @@ import Image from 'next/image';
 import { Navigation } from '@/components/navigation/Navigation';
 import { Footer } from '@/components/navigation/Footer';
 import { PropertyCard } from '@/components/property/PropertyCard';
+import { HomeSearchBar } from '@/components/search/HomeSearchBar';
 
 // Category Icons - Airbnb style
 const categories = [
@@ -396,24 +397,7 @@ export default async function HomePage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {/* Search Bar - Airbnb pill style */}
             <div className="flex justify-center mb-8">
-              <div className="inline-flex items-center bg-white border border-gray-200 rounded-full p-2 shadow-lg hover:shadow-xl transition-shadow">
-                <button className="px-6 py-3 text-sm font-medium text-gray-800 hover:bg-gray-50 rounded-full transition-colors">
-                  Anywhere
-                </button>
-                <span className="w-px h-6 bg-gray-200" />
-                <button className="px-6 py-3 text-sm font-medium text-gray-800 hover:bg-gray-50 rounded-full transition-colors">
-                  Any type
-                </button>
-                <span className="w-px h-6 bg-gray-200" />
-                <button className="px-6 py-3 text-sm font-medium text-gray-400 hover:bg-gray-50 rounded-full transition-colors">
-                  Price range
-                </button>
-                <button className="ml-2 p-3 bg-primary text-white rounded-full hover:bg-primary-dark transition-colors">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </button>
-              </div>
+              <HomeSearchBar />
             </div>
             
             {/* Category Pills - Airbnb Style */}

@@ -576,6 +576,29 @@ export const PROPERTY_AMENITIES = [
 ] as const;
 
 // ==============================
+// PROPERTY TYPES OPTIONS
+// ==============================
+
+export const PROPERTY_TYPES = [
+  { value: 'HOUSE', label: 'House' },
+  { value: 'APARTMENT', label: 'Apartment' },
+  { value: 'LAND', label: 'Land / Plot' },
+  { value: 'COMMERCIAL', label: 'Commercial' },
+  { value: 'FARM', label: 'Farm' },
+  { value: 'LODGE', label: 'Lodge / Hotel' },
+  { value: 'ROOM', label: 'Room / Bedsitter' },
+  { value: 'CONDO', label: 'Condo' },
+  { value: 'TOWNHOUSE', label: 'Townhouse' },
+  { value: 'INDUSTRIAL', label: 'Industrial' },
+] as const;
+
+export const LISTING_TYPES = [
+  { value: 'SALE', label: 'For Sale' },
+  { value: 'RENT', label: 'For Rent' },
+  { value: 'LEASE', label: 'For Lease' },
+] as const;
+
+// ==============================
 // UTILITY TYPES
 // ==============================
 
