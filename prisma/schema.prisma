@@ -1,0 +1,685 @@
+// ==============================
+// REAL ESTATE PLATFORM - PRISMA SCHEMA
+// Multi-role SaaS with scalability focus
+// ==============================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["filteredRelationCount"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ==============================
+// ENUMS
+// ==============================
+
+enum UserRole {
+  ADMIN
+  AGENT
+  LANDLORD
+  TENANT
+  BUYER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+enum PropertyType {
+  HOUSE
+  APARTMENT
+  CONDO
+  TOWNHOUSE
+  LAND
+  COMMERCIAL
+  INDUSTRIAL
+  FARM
+  LODGE
+}
+
+enum PropertyStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  SOLD
+  RENTED
+  WITHDRAWN
+}
+
+enum ListingType {
+  SALE
+  RENT
+  LEASE
+}
+
+enum InquiryStatus {
+  NEW
+  IN_PROGRESS
+  RESPONDED
+  CLOSED
+  SPAM
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  DOCUMENT
+  SYSTEM
+}
+
+enum ApprovalAction {
+  SUBMITTED
+  APPROVED
+  REJECTED
+  REVISION_REQUESTED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  VIEW
+  LOGIN
+  LOGOUT
+  APPROVAL
+  REJECTION
+  SUBSCRIPTION_CHANGE
+}
+
+enum SubscriptionTier {
+  FREE
+  BASIC
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  TRIAL
+  PAST_DUE
+}
+
+// ==============================
+// USER & PROFILES
+// ==============================
+
+model User {
+  id                String         @id @default(cuid())
+  email             String         @unique
+  emailVerified     DateTime?
+  passwordHash      String?        // Optional for OAuth users
+  phone             String?
+  phoneVerified     DateTime?
+  firstName         String
+  lastName          String
+  avatarUrl         String?
+  role              UserRole       @default(BUYER)
+  status            UserStatus     @default(PENDING_VERIFICATION)
+  
+  // Soft delete
+  isDeleted         Boolean        @default(false)
+  deletedAt         DateTime?
+  
+  // Timestamps
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  lastLoginAt       DateTime?
+  
+  // OAuth Relations
+  accounts          Account[]
+  sessions          Session[]
+  
+  // Relations
+  agentProfile      AgentProfile?
+  landlordProfile   LandlordProfile?
+  properties        Property[]     @relation("PropertyOwner")
+  inquiriesSent     Inquiry[]      @relation("InquirySender")
+  inquiriesReceived Inquiry[]      @relation("InquiryReceiver")
+  messagesSent      Message[]      @relation("MessageSender")
+  messagesReceived  Message[]      @relation("MessageReceiver")
+  savedProperties   SavedProperty[]
+  propertyViews     PropertyView[]
+  auditLogs         AuditLog[]     @relation("AuditUser")
+  auditLogsActedOn  AuditLog[]     @relation("AuditTarget")
+  subscription      Subscription?
+  notifications     Notification[]
+  
+  // Indexes for frequent queries
+  @@index([email])
+  @@index([role])
+  @@index([status])
+  @@index([createdAt])
+  @@index([isDeleted])
+  @@map("users")
+}
+
+// NextAuth.js Account model for OAuth
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+// NextAuth.js Session model
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// NextAuth.js Verification Token model
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model AgentProfile {
+  id                  String    @id @default(cuid())
+  userId              String    @unique
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Agent-specific fields
+  licenseNumber       String?   @unique
+  licenseExpiry       DateTime?
+  companyName         String?
+  companyLogo         String?
+  bio                 String?   @db.Text
+  specializations     Json?     // Array of property types they specialize in
+  serviceAreas        Json?     // Array of location areas
+  yearsExperience     Int       @default(0)
+  
+  // Verification
+  isVerified          Boolean   @default(false)
+  verifiedAt          DateTime?
+  verificationDocs    Json?     // URLs to verification documents
+  
+  // Stats (denormalized for performance)
+  totalListings       Int       @default(0)
+  totalSales          Int       @default(0)
+  totalRentals        Int       @default(0)
+  averageRating       Float     @default(0)
+  totalReviews        Int       @default(0)
+  
+  // Commission settings
+  commissionRate      Float     @default(0)
+  
+  // Timestamps
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  // Relations
+  managedProperties   Property[] @relation("PropertyAgent")
+  reviews             AgentReview[]
+  
+  @@index([isVerified])
+  @@map("agent_profiles")
+}
+
+model LandlordProfile {
+  id                  String    @id @default(cuid())
+  userId              String    @unique
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Landlord-specific fields
+  companyName         String?
+  taxId               String?
+  businessAddress     String?
+  
+  // Verification
+  isVerified          Boolean   @default(false)
+  verifiedAt          DateTime?
+  verificationDocs    Json?     // URLs to verification documents
+  
+  // Stats
+  totalProperties     Int       @default(0)
+  occupancyRate       Float     @default(0)
+  
+  // Timestamps
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  @@index([isVerified])
+  @@map("landlord_profiles")
+}
+
+// ==============================
+// PROPERTY & RELATED
+// ==============================
+
+model Property {
+  id                  String          @id @default(cuid())
+  
+  // Basic Info
+  title               String
+  slug                String          @unique
+  description         String          @db.Text
+  propertyType        PropertyType
+  listingType         ListingType
+  status              PropertyStatus  @default(DRAFT)
+  
+  // Pricing
+  price               Decimal         @db.Decimal(15, 2)
+  currency            String          @default("ZMW")
+  priceNegotiable     Boolean         @default(false)
+  
+  // Location
+  address             String
+  city                String
+  province            String
+  country             String          @default("Zambia")
+  postalCode          String?
+  latitude            Float?
+  longitude           Float?
+  
+  // Property Details
+  bedrooms            Int?
+  bathrooms           Int?
+  parkingSpaces       Int?
+  floorArea           Float?          // Square meters
+  landArea            Float?          // Square meters
+  yearBuilt           Int?
+  floors              Int?
+  
+  // Features & Amenities (JSON for flexibility)
+  features            Json?           // { pool: true, garden: true, ... }
+  amenities           Json?           // { wifi: true, security: true, ... }
+  
+  // Ownership & Management
+  ownerId             String
+  owner               User            @relation("PropertyOwner", fields: [ownerId], references: [id])
+  agentId             String?
+  agent               AgentProfile?   @relation("PropertyAgent", fields: [agentId], references: [id])
+  
+  // Approval workflow
+  approvalStatus      ApprovalAction  @default(SUBMITTED)
+  approvedAt          DateTime?
+  approvedBy          String?
+  rejectionReason     String?
+  
+  // Stats (denormalized)
+  viewCount           Int             @default(0)
+  saveCount           Int             @default(0)
+  inquiryCount        Int             @default(0)
+  
+  // SEO
+  metaTitle           String?
+  metaDescription     String?
+  
+  // Soft delete
+  isDeleted           Boolean         @default(false)
+  deletedAt           DateTime?
+  
+  // Availability
+  availableFrom       DateTime?
+  
+  // Timestamps
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  publishedAt         DateTime?
+  
+  // Relations
+  images              PropertyImage[]
+  inquiries           Inquiry[]
+  savedBy             SavedProperty[]
+  views               PropertyView[]
+  featured            FeaturedProperty?
+  
+  // Indexes for search & filtering
+  @@index([status])
+  @@index([propertyType])
+  @@index([listingType])
+  @@index([city])
+  @@index([province])
+  @@index([price])
+  @@index([bedrooms])
+  @@index([ownerId])
+  @@index([agentId])
+  @@index([createdAt])
+  @@index([isDeleted])
+  @@index([approvalStatus])
+  @@index([latitude, longitude])
+  
+  // Composite indexes for common queries
+  @@index([status, propertyType, city])
+  @@index([status, listingType, city, price])
+  @@map("properties")
+}
+
+model PropertyImage {
+  id            String    @id @default(cuid())
+  propertyId    String
+  property      Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  
+  url           String
+  thumbnailUrl  String?
+  altText       String?
+  caption       String?
+  sortOrder     Int       @default(0)
+  isPrimary     Boolean   @default(false)
+  
+  // Image metadata
+  width         Int?
+  height        Int?
+  sizeBytes     Int?
+  mimeType      String?
+  
+  createdAt     DateTime  @default(now())
+  
+  @@index([propertyId])
+  @@index([isPrimary])
+  @@map("property_images")
+}
+
+model SavedProperty {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  propertyId  String
+  property    Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  
+  savedAt     DateTime  @default(now())
+  notes       String?
+  
+  @@unique([userId, propertyId])
+  @@index([userId])
+  @@index([propertyId])
+  @@map("saved_properties")
+}
+
+model PropertyView {
+  id          String    @id @default(cuid())
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  propertyId  String
+  property    Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  
+  // Tracking info
+  ipAddress   String?
+  userAgent   String?
+  referrer    String?
+  sessionId   String?
+  
+  viewedAt    DateTime  @default(now())
+  duration    Int?      // Seconds spent viewing
+  
+  @@index([propertyId])
+  @@index([userId])
+  @@index([viewedAt])
+  @@map("property_views")
+}
+
+model FeaturedProperty {
+  id            String    @id @default(cuid())
+  propertyId    String    @unique
+  property      Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  
+  // Feature settings
+  tier          Int       @default(1) // 1 = basic, 2 = premium, 3 = spotlight
+  startDate     DateTime
+  endDate       DateTime
+  
+  // Payment tracking
+  amountPaid    Decimal   @db.Decimal(10, 2)
+  transactionId String?
+  
+  // Display settings
+  sortOrder     Int       @default(0)
+  showOnHome    Boolean   @default(true)
+  showInSearch  Boolean   @default(true)
+  
+  createdAt     DateTime  @default(now())
+  
+  @@index([startDate, endDate])
+  @@index([tier])
+  @@map("featured_properties")
+}
+
+// ==============================
+// INQUIRIES & MESSAGING
+// ==============================
+
+model Inquiry {
+  id            String        @id @default(cuid())
+  
+  // Parties
+  senderId      String
+  sender        User          @relation("InquirySender", fields: [senderId], references: [id])
+  receiverId    String
+  receiver      User          @relation("InquiryReceiver", fields: [receiverId], references: [id])
+  propertyId    String
+  property      Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  
+  // Inquiry details
+  subject       String?
+  message       String        @db.Text
+  status        InquiryStatus @default(NEW)
+  
+  // Contact preferences
+  preferPhone   Boolean       @default(false)
+  preferEmail   Boolean       @default(true)
+  preferredTime String?
+  
+  // Response tracking
+  respondedAt   DateTime?
+  
+  // Soft delete
+  isDeleted     Boolean       @default(false)
+  deletedAt     DateTime?
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  // Relations
+  messages      Message[]
+  
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([propertyId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("inquiries")
+}
+
+model Message {
+  id          String      @id @default(cuid())
+  
+  // Conversation context
+  inquiryId   String?
+  inquiry     Inquiry?    @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  
+  // Parties
+  senderId    String
+  sender      User        @relation("MessageSender", fields: [senderId], references: [id])
+  receiverId  String
+  receiver    User        @relation("MessageReceiver", fields: [receiverId], references: [id])
+  
+  // Content
+  content     String      @db.Text
+  messageType MessageType @default(TEXT)
+  attachments Json?       // Array of attachment URLs
+  
+  // Read status
+  isRead      Boolean     @default(false)
+  readAt      DateTime?
+  
+  // Soft delete
+  isDeleted   Boolean     @default(false)
+  deletedAt   DateTime?
+  
+  createdAt   DateTime    @default(now())
+  
+  @@index([inquiryId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([createdAt])
+  @@index([isRead])
+  @@map("messages")
+}
+
+// ==============================
+// REVIEWS
+// ==============================
+
+model AgentReview {
+  id          String    @id @default(cuid())
+  agentId     String
+  agent       AgentProfile @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  
+  reviewerId  String
+  rating      Int       // 1-5
+  title       String?
+  content     String    @db.Text
+  
+  // Moderation
+  isApproved  Boolean   @default(false)
+  approvedAt  DateTime?
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([agentId])
+  @@index([rating])
+  @@map("agent_reviews")
+}
+
+// ==============================
+// SUBSCRIPTIONS
+// ==============================
+
+model Subscription {
+  id                String             @id @default(cuid())
+  userId            String             @unique
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  tier              SubscriptionTier   @default(FREE)
+  status            SubscriptionStatus @default(TRIAL)
+  
+  // Billing
+  stripeCustomerId  String?
+  stripeSubId       String?
+  
+  // Limits based on tier
+  maxListings       Int                @default(5)
+  maxFeatured       Int                @default(0)
+  maxImages         Int                @default(5)
+  
+  // Dates
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  trialEndsAt       DateTime?
+  cancelledAt       DateTime?
+  
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  
+  @@index([tier])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+// ==============================
+// AUDIT & SYSTEM
+// ==============================
+
+model AuditLog {
+  id            String      @id @default(cuid())
+  
+  // Actor
+  userId        String?
+  user          User?       @relation("AuditUser", fields: [userId], references: [id], onDelete: SetNull)
+  
+  // Target (optional - for actions on other users)
+  targetUserId  String?
+  targetUser    User?       @relation("AuditTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+  
+  // Action details
+  action        AuditAction
+  entityType    String      // e.g., "Property", "User", "Inquiry"
+  entityId      String?
+  
+  // Change tracking
+  oldValues     Json?
+  newValues     Json?
+  
+  // Request metadata
+  ipAddress     String?
+  userAgent     String?
+  requestId     String?
+  
+  createdAt     DateTime    @default(now())
+  
+  @@index([userId])
+  @@index([action])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  title       String
+  message     String
+  type        String    // inquiry, message, approval, system
+  data        Json?     // Additional context
+  
+  isRead      Boolean   @default(false)
+  readAt      DateTime?
+  
+  createdAt   DateTime  @default(now())
+  
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ==============================
+// SYSTEM CONFIG
+// ==============================
+
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+  
+  @@map("system_config")
+}
