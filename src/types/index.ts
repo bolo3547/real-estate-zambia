@@ -377,9 +377,14 @@ export interface ZambiaProvince {
   cities: string[];
 }
 
-// Mumbwa District Areas
+// Mumbwa District Areas - Complete List of Villages and Areas
 export const MUMBWA_AREAS = [
+  // Main Town
   'Mumbwa Town',
+  'Mumbwa Boma',
+  'Mumbwa Township',
+  
+  // Major Villages & Areas
   'Nangoma',
   'Kaindu',
   'Kasip',
@@ -391,13 +396,145 @@ export const MUMBWA_AREAS = [
   'Luiri',
   'Blue Lagoon',
   'Chulwe',
-  'Kafue River Area',
+  'Landless Corner',
+  'Nalubanda',
+  'Kabulamwanda',
+  'Chibombo',
+  'Chisamba',
+  
+  // Chief Areas
+  'Chief Mumba',
+  'Chief Shakumbila',
+  'Chief Mulendema',
+  'Chief Kaindu',
+  'Chief Nalubanda',
+  'Chief Chibuluma',
+  'Chief Moono',
+  'Chief Mwanza',
+  
+  // Farming Areas
+  'Nangoma Farming Block',
+  'Mumbwa Farming Block',
+  'Kaindu Farming Area',
+  'Myooye Farming Block',
+  'Kasip Farm Area',
+  'Muembe Agricultural Area',
+  
+  // Road/Highway Areas
   'M9 Highway',
   'M20 Road',
-];
+  'Great West Road',
+  'Mumbwa-Namwala Road',
+  'Mumbwa-Landless Road',
+  
+  // Wildlife/Tourist Areas
+  'Blue Lagoon National Park',
+  'Kafue River Area',
+  'Kafue Flats',
+  'Lochinvar Area',
+  
+  // Settlements & Compounds
+  'Shikabeta',
+  'Ipumbu',
+  'Namaila',
+  'Nakanyika',
+  'Chilala',
+  'Chibwe',
+  'Kayoyo',
+  'Mwembeshi',
+  'Kapyanga',
+  'Nalusanga',
+  'Chinyunyu',
+  'Mukobela',
+  'Mwanachingwala',
+  'Shimukuni',
+  'Namoomba',
+  'Chikobo',
+  'Katunda',
+  'Nambala',
+  'Choma',
+  'Makunku',
+  'Chitongo',
+  'Nkole',
+  'Chipese',
+  'Kabulwebulwe',
+  'Choongo',
+  'Mungaila',
+  
+  // Other
+  'Other (Specify in Address)',
+] as const;
+
+// Mumbwa District Zones for easier categorization
+export const MUMBWA_ZONES = {
+  'Mumbwa Town & Centre': [
+    'Mumbwa Town',
+    'Mumbwa Boma',
+    'Mumbwa Township',
+    'Landless Corner',
+  ],
+  'Northern Zone': [
+    'Nangoma',
+    'Myooye',
+    'Kasip',
+    'Banachewembwe',
+    'Blue Lagoon',
+    'Kafue Flats',
+  ],
+  'Southern Zone': [
+    'Kaindu',
+    'Shakumbila',
+    'Nalubanda',
+    'Kabulamwanda',
+  ],
+  'Eastern Zone': [
+    'Muembe',
+    'Chulwe',
+    'Luiri',
+    'Namukumbo',
+    'Chibombo',
+    'Chisamba',
+  ],
+  'Western Zone': [
+    'Chief Mumba',
+    'Chief Mulendema',
+    'Mwembeshi',
+    'Kafue River Area',
+  ],
+  'Farming Blocks': [
+    'Nangoma Farming Block',
+    'Mumbwa Farming Block',
+    'Kaindu Farming Area',
+    'Myooye Farming Block',
+    'Kasip Farm Area',
+    'Muembe Agricultural Area',
+  ],
+};
 
 export const ZAMBIA_PROVINCES: ZambiaProvince[] = [
-  { name: 'Central', capital: 'Kabwe', cities: ['Mumbwa Town', 'Nangoma', 'Kaindu', 'Kasip', 'Muembe', 'Shakumbila', 'Myooye', 'Banachewembwe', 'Namukumbo', 'Luiri', 'Blue Lagoon', 'Chulwe'] },
+  { 
+    name: 'Central', 
+    capital: 'Kabwe', 
+    cities: [
+      'Mumbwa Town', 'Mumbwa Boma', 'Mumbwa Township', 'Landless Corner',
+      'Nangoma', 'Kaindu', 'Kasip', 'Muembe', 'Shakumbila', 'Myooye', 
+      'Banachewembwe', 'Namukumbo', 'Luiri', 'Blue Lagoon', 'Chulwe',
+      'Nalubanda', 'Kabulamwanda', 'Chibombo', 'Chisamba',
+      'Chief Mumba', 'Chief Shakumbila', 'Chief Mulendema', 'Chief Kaindu',
+      'Nangoma Farming Block', 'Mumbwa Farming Block', 'Kafue River Area',
+      'Shikabeta', 'Ipumbu', 'Namaila', 'Nakanyika', 'Chilala', 'Chibwe',
+      'Kayoyo', 'Mwembeshi', 'Kapyanga', 'Nalusanga', 'Chinyunyu',
+    ] 
+  },
+  { name: 'Lusaka', capital: 'Lusaka', cities: ['Lusaka', 'Chilanga', 'Kafue', 'Chongwe', 'Luangwa'] },
+  { name: 'Copperbelt', capital: 'Ndola', cities: ['Ndola', 'Kitwe', 'Chingola', 'Mufulira', 'Luanshya'] },
+  { name: 'Southern', capital: 'Livingstone', cities: ['Livingstone', 'Choma', 'Mazabuka', 'Monze', 'Kalomo'] },
+  { name: 'Eastern', capital: 'Chipata', cities: ['Chipata', 'Petauke', 'Katete', 'Lundazi', 'Mambwe'] },
+  { name: 'Northern', capital: 'Kasama', cities: ['Kasama', 'Mbala', 'Mpulungu', 'Luwingu', 'Mporokoso'] },
+  { name: 'Luapula', capital: 'Mansa', cities: ['Mansa', 'Samfya', 'Nchelenge', 'Kawambwa', 'Mwense'] },
+  { name: 'North-Western', capital: 'Solwezi', cities: ['Solwezi', 'Kasempa', 'Mwinilunga', 'Zambezi', 'Kabompo'] },
+  { name: 'Western', capital: 'Mongu', cities: ['Mongu', 'Senanga', 'Kaoma', 'Sesheke', 'Kalabo'] },
+  { name: 'Muchinga', capital: 'Chinsali', cities: ['Chinsali', 'Mpika', 'Nakonde', 'Isoka', 'Chama'] },
 ];
 
 // ==============================

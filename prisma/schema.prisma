@@ -5,11 +5,10 @@
 
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["filteredRelationCount"]
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -42,6 +41,7 @@ enum PropertyType {
   INDUSTRIAL
   FARM
   LODGE
+  ROOM
 }
 
 enum PropertyStatus {
@@ -125,6 +125,10 @@ model User {
   avatarUrl         String?
   role              UserRole       @default(BUYER)
   status            UserStatus     @default(PENDING_VERIFICATION)
+  
+  // Password Reset
+  resetToken        String?
+  resetTokenExpiry  DateTime?
   
   // Soft delete
   isDeleted         Boolean        @default(false)

@@ -4,11 +4,12 @@
  * Zambia Property - Add New Property Page
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useRequireRole } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/Toast';
 import { Button, Input, Select, Textarea } from '@/components/ui';
+import { MUMBWA_AREAS, MUMBWA_ZONES, ZAMBIA_PROVINCES } from '@/types';
 
 const propertyTypes = [
   { value: 'HOUSE', label: 'House' },
@@ -16,6 +17,8 @@ const propertyTypes = [
   { value: 'LAND', label: 'Land / Plot' },
   { value: 'COMMERCIAL', label: 'Commercial Property' },
   { value: 'LODGE', label: 'Lodge / Hotel' },
+  { value: 'FARM', label: 'Farm / Agricultural Land' },
+  { value: 'ROOM', label: 'Single Room' },
 ];
 
 const listingTypes = [
@@ -24,11 +27,11 @@ const listingTypes = [
 ];
 
 const provinces = [
+  { value: 'Central', label: 'Central (Mumbwa District)' },
   { value: 'Lusaka', label: 'Lusaka' },
   { value: 'Copperbelt', label: 'Copperbelt' },
   { value: 'Southern', label: 'Southern' },
   { value: 'Eastern', label: 'Eastern' },
-  { value: 'Central', label: 'Central' },
   { value: 'Northern', label: 'Northern' },
   { value: 'Luapula', label: 'Luapula' },
   { value: 'North-Western', label: 'North-Western' },
@@ -53,6 +56,26 @@ const amenitiesList = [
   'Solar Power',
   'Borehole',
   'Backup Generator',
+  'Water Tank',
+  'Electric Fence',
+  'CCTV',
+  'Staff Quarters',
+  'Gated Community',
+];
+
+// Agricultural features for farms/land
+const farmFeatures = [
+  'Irrigation System',
+  'Borehole',
+  'Dam/Water Source',
+  'Fenced',
+  'Title Deed',
+  'Electricity Connected',
+  'Farm House',
+  'Storage Barn',
+  'Cattle Kraal',
+  'Fruit Trees',
+  'Crop Ready',
 ];
 
 export default function NewPropertyPage() {
@@ -71,18 +94,41 @@ export default function NewPropertyPage() {
     currency: 'ZMW',
     address: '',
     city: '',
-    province: 'Lusaka',
+    village: '',
+    zone: '',
+    province: 'Central',
     bedrooms: '',
     bathrooms: '',
     floorArea: '',
     plotSize: '',
     yearBuilt: '',
     amenities: [] as string[],
+    // Agricultural fields
+    soilType: '',
+    waterSource: '',
+    hasTitleDeed: false,
   });
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   
-  const handleChange = (field: string, value: string | string[]) => {
+  // Get cities based on selected province
+  const availableCities = useMemo(() => {
+    const province = ZAMBIA_PROVINCES.find(p => p.name === formData.province);
+    return province?.cities || [];
+  }, [formData.province]);
+
+  // Get villages/areas for Mumbwa (Central Province)
+  const availableVillages = useMemo(() => {
+    if (formData.province === 'Central') {
+      if (formData.zone && MUMBWA_ZONES[formData.zone as keyof typeof MUMBWA_ZONES]) {
+        return MUMBWA_ZONES[formData.zone as keyof typeof MUMBWA_ZONES];
+      }
+      return [...MUMBWA_AREAS];
+    }
+    return [];
+  }, [formData.province, formData.zone]);
+  
+  const handleChange = (field: string, value: string | string[] | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
   
@@ -278,33 +324,118 @@ export default function NewPropertyPage() {
         {/* Location */}
         <div className="bg-white rounded-2xl p-6 shadow-premium-sm">
           <h2 className="text-lg font-semibold text-neutral-900 mb-4">
-            Location
+            📍 Location
           </h2>
           
           <div className="space-y-4">
-            <Input
-              label="Address"
-              placeholder="e.g., Plot 123, Kabulonga Road"
-              value={formData.address}
-              onChange={(e) => handleChange('address', e.target.value)}
+            {/* Province Selection */}
+            <Select
+              label="Province"
+              value={formData.province}
+              onChange={(e) => {
+                handleChange('province', e.target.value);
+                handleChange('city', '');
+                handleChange('village', '');
+                handleChange('zone', '');
+              }}
+              options={provinces}
+              required
             />
+
+            {/* For Central Province (Mumbwa) - Show Zone Selector */}
+            {formData.province === 'Central' && (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                <p className="text-sm font-medium text-green-800 mb-3">
+                  🏘️ Mumbwa District Areas
+                </p>
+                
+                <Select
+                  label="Zone (Optional - helps narrow down)"
+                  value={formData.zone}
+                  onChange={(e) => {
+                    handleChange('zone', e.target.value);
+                    handleChange('village', '');
+                  }}
+                  options={[
+                    { value: '', label: 'All Areas' },
+                    ...Object.keys(MUMBWA_ZONES).map(zone => ({
+                      value: zone,
+                      label: zone,
+                    }))
+                  ]}
+                />
+                
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Village / Area <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.village || formData.city}
+                    onChange={(e) => {
+                      handleChange('village', e.target.value);
+                      handleChange('city', e.target.value);
+                    }}
+                    className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent"
+                    required
+                  >
+                    <option value="">Select Village/Area</option>
+                    {availableVillages.map((village) => (
+                      <option key={village} value={village}>
+                        {village}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
             
-            <div className="grid grid-cols-2 gap-4">
+            {/* For other provinces - Show City Input */}
+            {formData.province !== 'Central' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    City / Town <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.city}
+                    onChange={(e) => handleChange('city', e.target.value)}
+                    className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent"
+                    required
+                  >
+                    <option value="">Select City/Town</option>
+                    {availableCities.map((city) => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <Input
+                  label="Area / Neighborhood"
+                  placeholder="e.g., Kabulonga, Rhodes Park"
+                  value={formData.village}
+                  onChange={(e) => handleChange('village', e.target.value)}
+                />
+              </div>
+            )}
+
+            <div>
               <Input
-                label="City"
-                placeholder="e.g., Lusaka"
-                value={formData.city}
-                onChange={(e) => handleChange('city', e.target.value)}
-                required
+                label="Street Address / Plot Number"
+                placeholder="e.g., Plot 123, Main Road, Near Mumbwa Hospital"
+                value={formData.address}
+                onChange={(e) => handleChange('address', e.target.value)}
               />
-              
-              <Select
-                label="Province"
-                value={formData.province}
-                onChange={(e) => handleChange('province', e.target.value)}
-                options={provinces}
-                required
-              />
+              <p className="mt-1 text-sm text-gray-500">Be specific - include landmarks, road names, or plot numbers</p>
+            </div>
+            
+            {/* Helpful tip for location */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-700">
+                💡 <strong>Tip:</strong> The more specific your location, the easier it is for buyers/renters to find your property. 
+                Include nearby landmarks like schools, hospitals, or main roads.
+              </p>
             </div>
           </div>
         </div>
@@ -364,7 +495,7 @@ export default function NewPropertyPage() {
         {/* Amenities */}
         <div className="bg-white rounded-2xl p-6 shadow-premium-sm">
           <h2 className="text-lg font-semibold text-neutral-900 mb-4">
-            Amenities
+            Amenities & Features
           </h2>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -402,6 +533,91 @@ export default function NewPropertyPage() {
             ))}
           </div>
         </div>
+
+        {/* Agricultural Features - Only show for LAND or FARM */}
+        {(formData.propertyType === 'LAND' || formData.propertyType === 'FARM') && (
+          <div className="bg-white rounded-2xl p-6 shadow-premium-sm">
+            <h2 className="text-lg font-semibold text-neutral-900 mb-4">
+              🌾 Agricultural / Land Features
+            </h2>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Select
+                  label="Soil Type"
+                  value={formData.soilType}
+                  onChange={(e) => handleChange('soilType', e.target.value)}
+                  options={[
+                    { value: '', label: 'Select Soil Type' },
+                    { value: 'loam', label: 'Loam Soil (Best for farming)' },
+                    { value: 'clay', label: 'Clay Soil' },
+                    { value: 'sandy', label: 'Sandy Soil' },
+                    { value: 'red-soil', label: 'Red Soil' },
+                    { value: 'black-cotton', label: 'Black Cotton Soil' },
+                    { value: 'mixed', label: 'Mixed' },
+                  ]}
+                />
+                
+                <Select
+                  label="Water Source"
+                  value={formData.waterSource}
+                  onChange={(e) => handleChange('waterSource', e.target.value)}
+                  options={[
+                    { value: '', label: 'Select Water Source' },
+                    { value: 'borehole', label: 'Borehole' },
+                    { value: 'river', label: 'River Access' },
+                    { value: 'dam', label: 'Dam' },
+                    { value: 'well', label: 'Well' },
+                    { value: 'municipal', label: 'Municipal Water' },
+                    { value: 'none', label: 'No Water Source' },
+                  ]}
+                />
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.hasTitleDeed}
+                    onChange={(e) => handleChange('hasTitleDeed', e.target.checked)}
+                    className="w-5 h-5 rounded border-neutral-300 text-primary focus:ring-primary"
+                  />
+                  <span className="text-sm font-medium text-neutral-700">
+                    📜 Has Title Deed
+                  </span>
+                </label>
+              </div>
+              
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-sm text-yellow-800">
+                  <strong>💡 Mumbwa District Tip:</strong> Land with title deeds commands higher prices. 
+                  If your land is under traditional authority, specify the Chief's area in the description.
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {farmFeatures.map((feature) => (
+                  <label
+                    key={feature}
+                    className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
+                      formData.amenities.includes(feature)
+                        ? 'bg-green-100 border-green-500 text-green-700'
+                        : 'bg-neutral-50 border-neutral-200 hover:border-neutral-300'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.amenities.includes(feature)}
+                      onChange={() => handleAmenityToggle(feature)}
+                      className="sr-only"
+                    />
+                    <span className="text-sm font-medium">{feature}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Images */}
         <div className="bg-white rounded-2xl p-6 shadow-premium-sm">

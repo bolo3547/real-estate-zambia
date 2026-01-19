@@ -7,6 +7,7 @@
 import type { Metadata } from 'next';
 import { Inter, Playfair_Display } from 'next/font/google';
 import { Providers } from '@/components/Providers';
+import { CookieConsent } from '@/components/ui/CookieConsent';
 import '@/styles/globals.css';
 
 const inter = Inter({
@@ -100,6 +101,7 @@ export default function RootLayout({
       <body className="font-sans antialiased bg-white text-gray-900">
         <Providers>
           {children}
+          <CookieConsent />
         </Providers>
       </body>
     </html>

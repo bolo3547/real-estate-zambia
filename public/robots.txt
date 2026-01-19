@@ -1,0 +1,18 @@
+# Zambia Property - Robots.txt
+# https://zambiaproperty.com
+
+User-agent: *
+Allow: /
+
+# Disallow admin and private areas
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+
+# Allow search engines to crawl public pages
+Allow: /properties/
+Allow: /properties/*
+
+# Sitemap location
+Sitemap: https://zambiaproperty.com/sitemap.xml

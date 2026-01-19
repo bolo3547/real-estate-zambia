@@ -36,6 +36,9 @@ export function Navigation() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   
+  // Hide center search on homepage since it has its own hero search
+  const isHomePage = pathname === '/';
+  
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
@@ -70,21 +73,23 @@ export function Navigation() {
             </span>
           </Link>
           
-          {/* Center Search - Desktop only */}
-          <div className="hidden lg:flex items-center">
-            <button className="flex items-center gap-4 border border-gray-200 rounded-full py-2 px-4 shadow-sm hover:shadow-md transition-shadow">
-              <span className="text-sm font-medium">Anywhere</span>
-              <span className="w-px h-6 bg-gray-200" />
-              <span className="text-sm font-medium">Any type</span>
-              <span className="w-px h-6 bg-gray-200" />
-              <span className="text-sm text-gray-400">Add price</span>
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-            </button>
-          </div>
+          {/* Center Search - Desktop only, hidden on homepage */}
+          {!isHomePage && (
+            <div className="hidden lg:flex items-center">
+              <button className="flex items-center gap-4 border border-gray-200 rounded-full py-2 px-4 shadow-sm hover:shadow-md transition-shadow">
+                <span className="text-sm font-medium">Anywhere</span>
+                <span className="w-px h-6 bg-gray-200" />
+                <span className="text-sm font-medium">Any type</span>
+                <span className="w-px h-6 bg-gray-200" />
+                <span className="text-sm text-gray-400">Add price</span>
+                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+              </button>
+            </div>
+          )}
           
           {/* Right Side */}
           <div className="flex items-center gap-2">

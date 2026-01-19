@@ -152,6 +152,14 @@ export async function getCurrentUser(): Promise<TokenPayload | null> {
 }
 
 /**
+ * Get access token from cookies
+ */
+export async function getAccessToken(): Promise<string | null> {
+  const cookieStore = await cookies();
+  return cookieStore.get(ACCESS_TOKEN_COOKIE)?.value ?? null;
+}
+
+/**
  * Get refresh token from cookies
  */
 export async function getRefreshToken(): Promise<string | null> {
